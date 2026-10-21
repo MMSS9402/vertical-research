@@ -2,6 +2,7 @@
 """vertical-research gate: 산출물 형식 검사, Knock-Out·채점·순위 계산, 실행 간 업체 명부.
 
 Usage:
+  gate.py new-run       <output_dir> --vertical <버티컬> [--regions Korea,Global]   (실행 폴더 생성, 경로 출력)
   gate.py check-records <run_dir> --config <config.md>
   gate.py score         <run_dir> --config <config.md>   (명부도 함께 갱신)
   gate.py registry      <output_dir> --config <config.md>
@@ -12,6 +13,7 @@ Exit code 0 = pass, 1 = gate fail, 2 = usage/config error. 표준 라이브러�
 """
 import argparse
 import csv
+import datetime
 import glob
 import json
 import os
@@ -76,6 +78,13 @@ def company_key(c):
     if host:
         return host
     return re.sub(r"[^0-9a-z가-힣]", "", (c.get("company") or "").lower())
+
+
+def run_folder_name(vertical, date):
+    """버티컬 표기(한국어 그대로) + 날짜. 폴더명에 못 쓰는 문자와 공백은 '-' 로 바꾼다."""
+    name = re.sub(r'[\\/:*?"<>|\s]+', "-", vertical.strip())
+    name = re.sub(r"-{2,}", "-", name).strip("-.") or "vertical"
+    return f"{name}-{date}"
 
 
 def run_vertical(run_dir):
@@ -551,15 +560,40 @@ def cmd_check_ko(args):
     return 0
 
 
+def cmd_new_run(args):
+    """실행 폴더를 만들고 경로를 출력한다. 같은 이름이 있으면 -2, -3 을 붙인다 (이전 실행을 덮어쓰지 않는다)."""
+    today = datetime.date.today()
+    base = os.path.join(args.dir, run_folder_name(args.vertical, today.strftime("%Y%m%d")))
+    path, n = base, 1
+    while os.path.exists(path):
+        n += 1
+        path = f"{base}-{n}"
+    for sub in ("notes", "records", "verify"):
+        os.makedirs(os.path.join(path, sub))
+    regions = [r.strip() for r in (args.regions or "").split(",") if r.strip()]
+    with open(os.path.join(path, "run.json"), "w", encoding="utf-8") as f:
+        json.dump({"vertical": args.vertical.strip(), "regions": regions, "date": today.isoformat()},
+                  f, ensure_ascii=False, indent=1)
+    print(os.path.abspath(path))
+    return 0
+
+
 def main():
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
         sys.stderr.reconfigure(encoding="utf-8")
     p = argparse.ArgumentParser(description="vertical-research gate")
-    p.add_argument("command", choices=["check-records", "score", "registry", "check-report", "check-ko"])
+    p.add_argument("command", choices=["new-run", "check-records", "score", "registry", "check-report", "check-ko"])
     p.add_argument("dir", help="실행 폴더 (registry 는 output_dir)")
     p.add_argument("--config")
+    p.add_argument("--vertical", help="new-run: 버티컬 표기")
+    p.add_argument("--regions", help="new-run: 쉼표로 구분한 지역")
     args = p.parse_args()
+    if args.command == "new-run":
+        if not args.vertical or not args.vertical.strip():
+            die("--vertical 이 필요함")
+        os.makedirs(args.dir, exist_ok=True)
+        sys.exit(cmd_new_run(args))
     if not os.path.isdir(args.dir):
         die(f"폴더가 없음: {args.dir}")
     if args.command == "check-ko":

@@ -1,7 +1,7 @@
 {
   "name": "vertical-research",
   "displayName": "Vertical Research",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "버티컬 업체 조사 멀티 에이전트 파이프라인 — 계획(planner) → 병렬 조사(researcher) → 독립 검증(verifier) → 스크립트 채점 → 보고서(writer) → 한국어 심사(ko-reviewer). 제품 정보와 평가 기준은 사용자 폴더의 .claude/vertical-research.config.md 에서 읽는다.",
   "author": {
     "name": "MMSS9402",

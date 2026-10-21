@@ -22,7 +22,7 @@ Claude Code 플러그인 `vertical-research` 의 멀티 에이전트 파이프�
 
 1. `references/vr-protocol.md` 를 읽는다.
 2. **설정**: 사용자가 설정 파일(`vertical-research.config.md`)을 올렸으면 그것을, 없으면 제품 이름·사양 요약·평가 기준을 물어 `references/config.example.md` 형식으로 만든다. 사용자가 기준을 주지 않으면 예시 기준을 쓰고 보고서 첫머리에 그렇게 적는다.
-3. 실행 폴더 `RUN` 을 작업 공간에 만든다 (`notes/ records/ verify/`).
+3. 실행 폴더 `RUN` 을 작업 공간에 `python scripts/gate.py new-run <output_dir> --vertical "<버티컬>" --regions "<지역>"` 으로 만든다 (폴더명은 버티컬 표기 + 날짜, 하위 `notes/ records/ verify/` 와 `run.json` 포함).
 4. 코드 실행이 안 되는 환경이면 gate.py 대신 protocol §5 규칙을 직접 적용하고, 그 사실을 보고서에 적는다.
 
 ## 순서

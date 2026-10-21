@@ -262,6 +262,21 @@ class GateTest(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertIn("제안 대상 2곳", out)
 
+    def test_new_run_korean_folder_name(self):
+        out_dir = os.path.join(self.root, "out")
+        code, out = run("new-run", out_dir, "--vertical", "건설·산업현장 출입통제/출역관리", "--regions", "Korea")
+        self.assertEqual(code, 0, out)
+        path = out.strip()
+        self.assertRegex(os.path.basename(path), r"^건설·산업현장-출입통제-출역관리-\d{8}$")
+        for sub in ("notes", "records", "verify"):
+            self.assertTrue(os.path.isdir(os.path.join(path, sub)))
+        with open(os.path.join(path, "run.json"), encoding="utf-8") as f:
+            meta = json.load(f)
+        self.assertEqual(meta["vertical"], "건설·산업현장 출입통제/출역관리")
+        self.assertEqual(meta["regions"], ["Korea"])
+        code, out2 = run("new-run", out_dir, "--vertical", "건설·산업현장 출입통제/출역관리")
+        self.assertEqual(out2.strip(), path + "-2")           # 이전 실행 폴더는 건드리지 않는다
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -40,7 +40,7 @@ G2 gate.py check-report, check-ko                 (S1 0건 · Top N 누락 0건)
 
 ## 2. 실행 폴더
 
-`<output_dir>/<vertical-slug>-<YYYYMMDD>/` (output_dir 은 설정 파일 값, 기본 `research`)
+`<output_dir>/<버티컬 표기>-<YYYYMMDD>/` (output_dir 은 설정 파일 값, 기본 `research`). 드라이버가 `gate.py new-run` 으로 만든다. 폴더명은 버티컬 표기를 한국어 그대로 쓰고, 폴더명에 못 쓰는 문자와 공백만 `-` 로 바꾼다. 명부는 `<output_dir>` 바로 아래 폴더만 읽으므로, 명부에서 빼고 싶은 실행은 `_` 로 시작하는 하위 폴더(예: `_보관/`)로 옮긴다.
 
 ```
 plan.md

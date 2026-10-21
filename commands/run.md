@@ -14,7 +14,11 @@ argument-hint: '"<버티컬/Application>" [지역] [top_n]'
 1. 프로토콜 `${CLAUDE_PLUGIN_ROOT}/skills/vr-protocol/SKILL.md` 를 Read.
 2. 설정 `.claude/vertical-research.config.md` 를 Read. 없으면 멈추고 `/vertical-research:init` 을 안내한다.
 3. 파이썬 확인: `for c in python3 python py; do "$c" -c "import sys; assert sys.version_info >= (3, 8)" 2>/dev/null && { echo "$c"; break; }; done` 로 실제로 실행되는 파이썬을 찾는다 (Windows 의 Microsoft Store 가짜 `python3` 는 `command -v` 로는 잡히지만 실행되지 않는다). 아무것도 안 나오면 멈춘다. 셸 변수는 Bash 호출 사이에 유지되지 않으므로, 아래 게이트 명령의 `$PY`·`$GATE`·`$RUN`·`$CFG` 는 매번 실제 경로로 바꿔 쓴다 (`GATE` = `${CLAUDE_PLUGIN_ROOT}/scripts/gate.py`).
-4. 실행 폴더 `RUN=<output_dir>/<vertical-slug>-<YYYYMMDD>` 를 만든다 (이미 있으면 `-2`, `-3` 을 붙인다. 이전 실행 폴더에 쓰지 않는다). 하위에 `notes/ records/ verify/`. `RUN/run.json` 에 `{"vertical": "<버티컬>", "regions": [...], "date": "YYYY-MM-DD"}` 를 쓴다. 명부는 이 vertical 표기로 버티컬을 구분한다. 같은 버티컬의 이전 실행이 있으면 그 `run.json` 의 표기를 그대로 쓴다.
+4. 버티컬 표기를 정한다. 명부는 이 표기로 버티컬을 구분하므로, 같은 버티컬의 이전 실행(`<output_dir>/*/run.json`)이 있으면 그 `vertical` 표기를 그대로 쓴다. 이어서 실행 폴더를 스크립트로 만든다:
+   ```bash
+   "$PY" "$GATE" new-run "<output_dir>" --vertical "<버티컬 표기>" --regions "<지역1>,<지역2>"
+   ```
+   출력된 경로가 `RUN` 이다. 폴더명은 버티컬 표기(한국어 그대로) + 날짜이고, 폴더명에 못 쓰는 문자와 공백은 `-` 로 바뀐다 (예: `건설·산업현장-출입통제-출역관리-20261021`). 이미 있으면 `-2`, `-3` 이 붙는다. 하위 `notes/ records/ verify/` 와 `run.json` 도 함께 만들어진다. 직접 폴더를 만들거나 이전 실행 폴더에 쓰지 않는다.
 5. top_n 을 인자로 덮어쓰면 `RUN/config.override.md` 에 설정 파일을 복사하고 json 블록의 `top_n` 만 바꾼 뒤, 이후 `--config` 로 그 파일을 쓴다. 아니면 원래 설정 파일 경로를 쓴다. 이를 `CFG` 라 한다.
 6. 모호함 확인: 버티컬 이름이 여러 뜻으로 읽히거나 지역이 결과를 크게 바꾸는데 인자에 없으면, **한 번만** 사용자에게 묻는다. 답이 없으면 설정 기본값으로 진행한다.
 
