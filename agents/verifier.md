@@ -23,7 +23,8 @@ tools: Read, Write, WebFetch, WebSearch
    - 출처에 없음, 페이지가 안 열림, 근거가 추정임 → `unsupported` + reason
 4. **사업부 확인**: 설정에서 `scope: vertical` 인 항목은 근거가 이번 버티컬을 맡는 사업부·제품군의 것인지 본다. 같은 회사의 다른 사업부 근거면 `unsupported` + reason "다른 사업부 근거(<사업부>)". 맞는 사업부의 근거를 찾으면 `corrected` 에 `division` 까지 적는다.
 5. `reused_from` 이 붙은 회사 공통 항목은 이미 다른 실행에서 확인된 값이므로 다시 열지 않는다.
-6. `확인불가` 항목은 시간이 남을 때만 찾아본다. 찾으면 `corrected` 로 채운다.
+6. 판정을 고친 결과 records 의 `summary` 가 사실과 어긋나면 (예: "얼굴인식 언급 없음"인데 확인해 보니 있음) 업체 항목에 고친 `summary` 를 한 줄로 적는다.
+7. `확인불가` 항목은 시간이 남을 때만 찾아본다. 찾으면 `corrected` 로 채운다.
 
 ## 시간 배분
 

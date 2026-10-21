@@ -164,6 +164,17 @@ class GateTest(unittest.TestCase):
         self.assertEqual(len(merged), 1)
         self.assertIn("beta.com", merged[0]["homepage"])
 
+    def test_verify_summary_correction(self):
+        self.base_records()
+        self.write("verify/u1.json", {"unit": "u1", "companies": [
+            {"company": "Beta", "status": "fix", "summary": "검증 후 요약"},
+            {"company": "Gamma", "status": "ok", "summary": "  "},
+        ]})
+        run("score", self.dir, "--config", self.cfg)
+        rows = {r["company"]: r for r in self.rows()}
+        self.assertEqual(rows["Beta"]["summary"], "검증 후 요약")
+        self.assertNotEqual(rows["Gamma"]["summary"], "")
+
     def test_check_report(self):
         self.base_records()
         run("score", self.dir, "--config", self.cfg)

@@ -176,6 +176,8 @@ def apply_verify(c, v):
         return f"검증 제외: {v.get('reason') or '사유 미기재'}"
     if is_url(v.get("homepage")):
         c["homepage"] = v["homepage"]
+    if isinstance(v.get("summary"), str) and v["summary"].strip():
+        c["summary"] = v["summary"].strip()
     for kid, k in (v.get("knockout") or {}).items():
         if isinstance(k, dict) and isinstance(k.get("hit"), bool):
             c.setdefault("knockout", {})[kid] = k

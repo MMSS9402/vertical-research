@@ -60,6 +60,7 @@ target 업체가 있는 records 파일마다 `Agent(subagent_type="vertical-rese
 
 ## 6) W — writer
 
+먼저 `RUN/report.md` 가 없으면 자리표시 한 줄 `<!-- vr:report-placeholder -->` 만 담아 Write 한다. 하네스가 서브에이전트의 **새** 보고서 파일 쓰기는 막지만 기존 파일 Edit 는 허용하기 때문이다.
 `Agent(subagent_type="vertical-research:writer", run_in_background=false)`. 프롬프트: 공통 머리말 + 버티컬 + 저장 경로 `RUN/report.md`.
 writer 응답에 `=====BEGIN report.md=====` 블록이 있으면 (하네스가 서브에이전트의 보고서 파일 쓰기를 막은 경우) 그 사이 본문을 고치지 말고 그대로 `RUN/report.md` 에 Write 한다. 재작성 회차도 같다.
 
