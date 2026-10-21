@@ -20,7 +20,7 @@ def target(name, home, levels, ko_hit=None):
         "company": name, "homepage": home, "country": "KR", "segment": "target", "summary": "s",
         "knockout": {k: ({"hit": True, "evidence": "e", "source": "https://x.com/k"} if k == ko_hit
                          else {"hit": False, "evidence": "", "source": ""}) for k in KO},
-        "scores": {sid: ({"level": lv, "evidence": f"{sid} 근거", "source": f"https://x.com/{sid}"}
+        "scores": {sid: ({"level": lv, "evidence": f"{sid} 근거", "source": f"https://x.com/{sid}", "division": "전사"}
                          if lv != "확인불가" else {"level": lv, "evidence": "", "source": ""})
                    for sid, lv in zip(SCORING, levels)},
         "contact_roles": [{"role": "Head of Product", "source": "https://x.com/team"}],
@@ -34,28 +34,35 @@ def run(*args):
 
 class GateTest(unittest.TestCase):
     def setUp(self):
-        self.dir = tempfile.mkdtemp()
-        for d in ("records", "verify"):
-            os.makedirs(os.path.join(self.dir, d))
+        self.root = tempfile.mkdtemp()          # output_dir 역할
+        self.dir = self.make_run("run1", "건설")
         # top_n 을 3 으로 줄인 설정
         with open(CONFIG, encoding="utf-8") as f:
             text = f.read().replace('"top_n": 20', '"top_n": 3')
-        self.cfg = os.path.join(self.dir, "cfg.md")
+        self.cfg = os.path.join(self.root, "cfg.md")
         with open(self.cfg, "w", encoding="utf-8") as f:
             f.write(text)
 
     def tearDown(self):
-        shutil.rmtree(self.dir)
+        shutil.rmtree(self.root)
 
-    def write(self, rel, data):
-        with open(os.path.join(self.dir, rel), "w", encoding="utf-8") as f:
+    def make_run(self, name, vertical):
+        d = os.path.join(self.root, name)
+        for sub in ("records", "verify"):
+            os.makedirs(os.path.join(d, sub))
+        with open(os.path.join(d, "run.json"), "w", encoding="utf-8") as f:
+            json.dump({"vertical": vertical}, f, ensure_ascii=False)
+        return d
+
+    def write(self, rel, data, run_dir=None):
+        with open(os.path.join(run_dir or self.dir, rel), "w", encoding="utf-8") as f:
             if isinstance(data, str):
                 f.write(data)
             else:
                 json.dump(data, f, ensure_ascii=False)
 
-    def rows(self):
-        with open(os.path.join(self.dir, "candidates.csv"), encoding="utf-8-sig") as f:
+    def rows(self, run_dir=None):
+        with open(os.path.join(run_dir or self.dir, "candidates.csv"), encoding="utf-8-sig") as f:
             return list(csv.DictReader(f))
 
     def base_records(self):
@@ -127,8 +134,11 @@ class GateTest(unittest.TestCase):
         ]})
         code, out = run("score", self.dir, "--config", self.cfg)
         rows = {r["company"]: r for r in self.rows()}
-        self.assertEqual(rows["Alpha"]["total"], str(100 - 15 - 8))
-        self.assertEqual(rows["Alpha"]["A1"], "확인불가(0)")
+        # A1 은 검증에서 강등됐지만 같은 업체를 찾은 u2(Alpha Inc) 기록으로 보완된다
+        self.assertEqual(rows["Alpha"]["total"], str(100 - 8))
+        self.assertEqual(rows["Alpha"]["A1"], "상(15)")
+        with open(os.path.join(self.dir, "evidence.md"), encoding="utf-8") as f:
+            self.assertIn("u2 단위에서 보완", f.read())
         self.assertEqual(rows["Alpha"]["D1"], "하(2)")
         self.assertNotIn("미검증", rows["Alpha"]["review_flag"])
         self.assertIn("검증 제외", rows["Beta"]["excluded"])
@@ -164,6 +174,65 @@ class GateTest(unittest.TestCase):
         code, out = run("check-ko", self.dir)
         self.assertEqual(code, 1)
         self.assertIn("quote 가 report.md 에 없음", out)
+
+
+    def test_vertical_item_requires_division(self):
+        rec = target("NoDiv", "https://nodiv.com", ["상"] * 8)
+        del rec["scores"]["B1"]["division"]
+        del rec["scores"]["A1"]["division"]   # 회사 공통 항목은 division 없어도 됨
+        rec["business_lines"] = [{"vertical": "오피스"}]
+        self.write("records/u1.json", {"unit": "u1", "companies": [rec]})
+        code, out = run("check-records", self.dir, "--config", self.cfg)
+        self.assertEqual(code, 1)
+        self.assertIn("B1 는 버티컬별 항목이라 division", out)
+        self.assertNotIn("A1 는", out)
+        self.assertIn("business_lines", out)
+
+    def test_same_company_in_two_units_is_merged_not_dropped(self):
+        a = target("Omega", "https://omega.com", ["상", "상", "확인불가", "상", "상", "상", "상", "상"])
+        b = target("Omega Corp", "https://www.omega.com", ["확인불가"] * 2 + ["중"] + ["확인불가"] * 5)
+        b["business_lines"] = [{"vertical": "공장 보안", "division": "산업보안", "source": "https://omega.com/f"}]
+        self.write("records/u1.json", {"unit": "u1", "companies": [a]})
+        self.write("records/u2.json", {"unit": "u2", "companies": [b]})
+        run("score", self.dir, "--config", self.cfg)
+        rows = self.rows()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["B1"], "중(10)")              # u2 에서 보완
+        self.assertEqual(rows[0]["total"], str(100 - 15 + 10))
+        self.assertIn("공장 보안(미조사)", rows[0]["other_verticals"])
+
+    def test_registry_one_proposal_per_company_across_verticals(self):
+        self.write("records/u1.json", {"unit": "u1", "companies": [
+            target("Alpha", "https://alpha.com", ["상"] * 8),
+            target("Kappa", "https://kappa.com", ["중"] * 8, ko_hit="K1"),
+        ]})
+        run("score", self.dir, "--config", self.cfg)
+        run2 = self.make_run("run2", "오피스")
+        low = target("Alpha", "https://www.alpha.com", ["상", "상", "하", "상", "하", "하", "하", "중"])
+        self.write("records/u1.json", {"unit": "u1", "companies": [
+            low, target("Kappa", "https://kappa.com", ["상"] * 8), target("Beta", "https://beta.com", ["중"] * 8)]},
+            run_dir=run2)
+        run("score", run2, "--config", self.cfg)
+        rows2 = {r["company"]: r for r in self.rows(run2)}
+        self.assertEqual(rows2["Alpha"]["proposal_vertical"], "건설")
+        self.assertIn("타버티컬제안", rows2["Alpha"]["review_flag"])
+        self.assertIn("타버티컬KO", rows2["Kappa"]["review_flag"])
+        self.assertIn("D2 회사공통 불일치", rows2["Alpha"]["review_flag"])
+        with open(os.path.join(self.root, "_registry", "companies.csv"), encoding="utf-8-sig") as f:
+            reg = {r["company"]: r for r in csv.DictReader(f)}
+        self.assertEqual(len(reg), 3)                           # Alpha 는 한 줄
+        self.assertEqual(reg["Alpha"]["proposal_vertical"], "건설")
+        self.assertEqual(reg["Alpha"]["multi_vertical"], "Y")
+        self.assertIn("오피스", reg["Alpha"]["other_verticals"])
+        self.assertIn("K1", reg["Kappa"]["excluded"])
+        self.assertEqual(reg["Kappa"]["proposal_vertical"], "")
+        self.assertEqual(reg["Beta"]["proposal_vertical"], "오피스")
+        with open(os.path.join(self.root, "_registry", "company_facts.json"), encoding="utf-8") as f:
+            facts = json.load(f)
+        self.assertEqual(sorted(facts["alpha.com"]["items"]), ["A1", "A2", "B2", "D2"])
+        code, out = run("registry", self.root, "--config", self.cfg)
+        self.assertEqual(code, 0, out)
+        self.assertIn("제안 대상 2곳", out)
 
 
 if __name__ == "__main__":

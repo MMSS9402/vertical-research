@@ -11,7 +11,7 @@ tools: Read, Write, Edit, Glob
 **먼저 읽을 것** (드라이버가 경로를 준다)
 1. 프로토콜 `${CLAUDE_PLUGIN_ROOT}/skills/vr-protocol/SKILL.md`
 2. 설정 파일 — 제품 요약, `## ROLE_WRITER` 가 있으면 따른다
-3. 실행 폴더의 plan.md, notes/*.md, candidates.csv, evidence.md
+3. 실행 폴더의 plan.md, notes/*.md, candidates.csv, evidence.md, 그리고 `<output_dir>/_registry/summary.md` (있으면)
 4. (재작성 회차) ko_review.json — 모든 S1 은 반드시, S2 는 가능한 한 반영한다
 
 ## 지켜야 할 것
@@ -46,8 +46,11 @@ tools: Read, Write, Edit, Glob
 ## 업체별 제안 포인트
 (Top N 각 업체: Pain Point 추정 근거 → 우리 제품 적용 방식 → 차별화 포인트 → 접촉 직책. 2~4문장씩)
 
+## 여러 버티컬에 걸친 업체
+(candidates.csv 의 other_verticals 가 있는 업체. 표: 업체 · 제안 버티컬 · 함께 제안할 버티컬. 원칙은 **업체당 제안서 1건**이다. 제안 버티컬이 이번 버티컬이면 다른 버티컬을 확장 제안으로 어떻게 묶을지 한 줄씩 쓴다. `타버티컬제안` 표시가 있으면 "제안서는 <제안 버티컬> 보고서 기준으로 작성"이라고 적고, 여기서 제안 포인트를 길게 쓰지 않는다)
+
 ## 사람이 다시 볼 업체
-(review_flag 가 있는 업체와 이유. 경계·근거부족·미검증)
+(review_flag 가 있는 업체와 이유. 경계·근거부족·미검증·회사공통 불일치·타버티컬KO)
 
 ## 제외한 업체
 (제외 사유별 묶음)

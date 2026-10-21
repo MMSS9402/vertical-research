@@ -13,6 +13,7 @@ tools: Read, Write, WebSearch, WebFetch
 2. 설정 파일 — `knockout`·`scoring` 의 `check`·`guide` 가 판정 기준이다. `## ROLE_RESEARCHER` 가 있으면 따른다
 3. plan.md 에서 **당신의 단위** 부분과 `## 단위 간 경계`
 4. 제품 사양 문서는 우리 제품과 업체의 **적합도**를 판단할 때만 참고한다
+5. 명부의 회사 공통 값 `<output_dir>/_registry/company_facts.json` (있으면). 도메인을 키로 찾는다
 
 ## 조사 방법
 
@@ -21,6 +22,15 @@ tools: Read, Write, WebSearch, WebFetch
 3. 후보마다 **공식 홈페이지**를 직접 열어 확인한다. 검색 결과 요약만 보고 판정하지 않는다. 우선 볼 페이지: Products, Solutions, Partners/Integrations, Customers/Case Studies, About, News.
 4. 매출·임직원 수는 공시, 회사 소개, LinkedIn 회사 페이지, 신뢰할 만한 기사 순으로 찾는다.
 5. 도구 호출은 업체 수 × 2 + 10 회 안팎, **최대 40회**에서 멈춘다. 목표 업체 수를 못 채워도 확인된 업체만 남긴다.
+
+## 여러 버티컬을 하는 업체 (중요)
+
+SI·플랫폼 업체는 여러 버티컬 사업을 동시에 하는 경우가 많다. 프로토콜 §1-1 을 따른다.
+
+- **회사 공통 항목**(`scope: company`)은 회사 전체 기준으로 본다. 명부에 이미 확인된 값이 있으면 그대로 옮기고 `reused_from` 을 붙인다. 다시 조사하지 않는다.
+- **버티컬 항목**(`scope: vertical`)은 **이번 버티컬을 맡는 사업부·제품군**의 근거만 쓴다. `division` 에 그 이름을 적는다. 예를 들어 건설 버티컬을 조사하면서 그 회사 스마트빌딩 사업부의 고객 사례를 D1 근거로 쓰면 안 된다.
+- 이번 버티컬과 관계없는 사업부만 있으면 그 업체는 이번 단위의 target 이 아니다. 대신 notes 에 "다른 버티컬 후보"로 적는다.
+- 업체가 하는 **다른 버티컬 사업**은 `business_lines` 에 출처와 함께 적는다. 영업이 한 제안서에 묶어 제안할 때 쓴다.
 
 ## 판정 규칙
 

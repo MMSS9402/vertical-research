@@ -14,6 +14,7 @@ argument-hint: [제품 사양 문서 경로 — 선택]
 3. 자료 찾기 (현재 폴더 기준, Glob/Grep):
    - 제품 사양: 인자 경로 → `docs/**/*spec*`, `**/*사양*`, `**/*product*` 순으로 찾는다. PDF 만 있으면 텍스트를 뽑아 `docs/product_spec.md` 로 저장할지 묻는다.
    - 평가 기준: `Knock-Out`, `배점`, `평가`, `scoring` 이 들어간 md 를 찾는다. 찾으면 표를 `knockout`·`scoring` 형식으로 옮긴다 (id 는 원문 번호 유지, levels 점수는 원문 그대로).
+   - 항목마다 `scope` 를 정한다. 회사 전체에 하나뿐인 값(매출, 임직원 수, 지역 전개, 연동 개방성 등)은 `company`, 사업부·버티컬마다 달라지는 값(자체 플랫폼, 도메인 경험, 아키텍처, 레퍼런스 등)은 `vertical`. 정한 결과를 표로 보여 주고 사용자 확인을 받는다.
    - 제안 담당자 직책: `담당자`, `Contact`, `Product Manager` 로 찾는다.
 4. 템플릿의 가상 예시를 실제 값으로 바꿔 `.claude/vertical-research.config.md` 를 Write. 못 찾은 키는 `"TODO: ..."` 문자열로 둔다.
 5. `public_terms` 와 `confidential` 은 반드시 사용자에게 확인한다 — 검색어로 써도 되는 공개 명칭과, 절대 외부로 나가면 안 되는 항목.

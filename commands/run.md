@@ -1,6 +1,6 @@
 ---
 description: 버티컬 업체 조사 드라이버 — 계획(planner) → 병렬 조사(researcher) → 독립 검증(verifier) → 스크립트 채점 → 보고서(writer) → 한국어 심사(ko-reviewer)를 진행하고 게이트를 스크립트로 판정한다. 버티컬 하나 = 한 번 실행.
-argument-hint: "<버티컬/Application>" [지역] [top_n]
+argument-hint: '"<버티컬/Application>" [지역] [top_n]'
 ---
 
 당신(메인 Claude)이 **드라이버**다. 직접 조사하거나 보고서를 쓰지 않는다. 에이전트를 호출하고, 파일을 옮기고, 게이트를 Bash 로 판정한다. 컨텍스트를 아끼려고 에이전트 산출물 전문은 읽지 않는다 — 게이트 결과와 에이전트 최종 요약만 본다.
@@ -14,7 +14,7 @@ argument-hint: "<버티컬/Application>" [지역] [top_n]
 1. 프로토콜 `${CLAUDE_PLUGIN_ROOT}/skills/vr-protocol/SKILL.md` 를 Read.
 2. 설정 `.claude/vertical-research.config.md` 를 Read. 없으면 멈추고 `/vertical-research:init` 을 안내한다.
 3. 파이썬 확인: `command -v python3 || command -v python` 으로 실행 파일 경로를 얻는다. 없으면 멈춘다. 셸 변수는 Bash 호출 사이에 유지되지 않으므로, 아래 게이트 명령의 `$PY`·`$GATE`·`$RUN`·`$CFG` 는 매번 실제 경로로 바꿔 쓴다 (`GATE` = `${CLAUDE_PLUGIN_ROOT}/scripts/gate.py`).
-4. 실행 폴더 `RUN=<output_dir>/<vertical-slug>-<YYYYMMDD>` 를 만든다 (이미 있으면 `-2`, `-3` 을 붙인다. 이전 실행 폴더에 쓰지 않는다). 하위에 `notes/ records/ verify/`.
+4. 실행 폴더 `RUN=<output_dir>/<vertical-slug>-<YYYYMMDD>` 를 만든다 (이미 있으면 `-2`, `-3` 을 붙인다. 이전 실행 폴더에 쓰지 않는다). 하위에 `notes/ records/ verify/`. `RUN/run.json` 에 `{"vertical": "<버티컬>", "regions": [...], "date": "YYYY-MM-DD"}` 를 쓴다. 명부는 이 vertical 표기로 버티컬을 구분한다. 같은 버티컬의 이전 실행이 있으면 그 `run.json` 의 표기를 그대로 쓴다.
 5. top_n 을 인자로 덮어쓰면 `RUN/config.override.md` 에 설정 파일을 복사하고 json 블록의 `top_n` 만 바꾼 뒤, 이후 `--config` 로 그 파일을 쓴다. 아니면 원래 설정 파일 경로를 쓴다. 이를 `CFG` 라 한다.
 6. 모호함 확인: 버티컬 이름이 여러 뜻으로 읽히거나 지역이 결과를 크게 바꾸는데 인자에 없으면, **한 번만** 사용자에게 묻는다. 답이 없으면 설정 기본값으로 진행한다.
 
@@ -25,6 +25,7 @@ argument-hint: "<버티컬/Application>" [지역] [top_n]
 설정: <CFG 절대경로>
 제품 사양: <설정의 product_spec 절대경로>
 실행 폴더: <RUN 절대경로>
+업체 명부: <output_dir 절대경로>/_registry/ (없으면 "없음")
 ```
 
 ## 1) P — planner
@@ -78,7 +79,7 @@ target 업체가 있는 records 파일마다 `Agent(subagent_type="vertical-rese
 ## 9) 마무리
 
 1. `RUN/run_log.md` 에 단계별 결과(게이트 출력 한 줄씩, 재시도 횟수, 남은 지적)를 append.
-2. 사용자에게 5줄 이내로 보고: 보고서 경로, 후보/제외/Top N 수, 검토 표시 업체 수, 남은 S1(있으면), 다음에 사람이 볼 것. 보고서 전문을 채팅에 붙이지 않는다.
+2. 사용자에게 6줄 이내로 보고: 보고서 경로, 후보/제외/Top N 수, 검토 표시 업체 수, 다중 버티컬 업체 수와 명부 경로(`_registry/companies.csv`, 업체당 제안서 1건 기준 전체 제안 대상 수), 남은 S1(있으면), 다음에 사람이 볼 것. 보고서 전문을 채팅에 붙이지 않는다.
 
 ## 금지
 

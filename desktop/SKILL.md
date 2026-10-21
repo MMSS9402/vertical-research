@@ -38,6 +38,10 @@ Claude Code 플러그인 `vertical-research` 의 멀티 에이전트 파이프�
 7. **한국어 심사** (ko-reviewer.md) — 방금 쓴 글이 아니라 남이 쓴 글이라고 보고 엄격하게 읽는다. ko_review.json 저장.
 8. **보고서 게이트** — `check-report`, `check-ko`. S1 이 남으면 6→7→8 을 최대 2회 반복.
 
+## 여러 버티컬 조사
+
+한 SI 업체가 여러 버티컬 사업을 할 수 있다. 버티컬을 바꿔 다시 실행할 때 **같은 작업 폴더**(`output_dir`)를 쓰면 `score` 가 `_registry/` 명부를 갱신해 업체당 제안서 1건으로 묶는다. 새 채팅에서 이어 하려면 이전 실행 폴더를 다시 올려야 명부가 이어진다.
+
 ## 마무리
 
 report.md, candidates.csv, evidence.md 를 사용자에게 파일로 건넨다. 채팅에는 5줄 요약만: Top N 수, 제외 수, 검토 표시 업체 수, 남은 S1, 사람이 다음에 볼 것.
