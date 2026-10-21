@@ -244,7 +244,8 @@ class GateTest(unittest.TestCase):
         rows2 = {r["company"]: r for r in self.rows(run2)}
         self.assertEqual(rows2["Alpha"]["proposal_vertical"], "건설")
         self.assertIn("타버티컬제안", rows2["Alpha"]["review_flag"])
-        self.assertIn("타버티컬KO", rows2["Kappa"]["review_flag"])
+        self.assertNotIn("타버티컬KO", rows2["Kappa"]["review_flag"])   # 회사 단위 판정은 최근 실행을 따른다
+        self.assertIn("KO 판정 변경", rows2["Kappa"]["review_flag"])
         self.assertIn("D2 회사공통 불일치", rows2["Alpha"]["review_flag"])
         with open(os.path.join(self.root, "_registry", "companies.csv"), encoding="utf-8-sig") as f:
             reg = {r["company"]: r for r in csv.DictReader(f)}
@@ -252,15 +253,35 @@ class GateTest(unittest.TestCase):
         self.assertEqual(reg["Alpha"]["proposal_vertical"], "건설")
         self.assertEqual(reg["Alpha"]["multi_vertical"], "Y")
         self.assertIn("오피스", reg["Alpha"]["other_verticals"])
-        self.assertIn("K1", reg["Kappa"]["excluded"])
-        self.assertEqual(reg["Kappa"]["proposal_vertical"], "")
+        self.assertEqual(reg["Kappa"]["excluded"], "")
+        self.assertEqual(reg["Kappa"]["proposal_vertical"], "오피스")
+        self.assertIn("KO 판정 변경", reg["Kappa"]["flags"])
         self.assertEqual(reg["Beta"]["proposal_vertical"], "오피스")
+        rows1 = {r["company"]: r for r in self.rows()}          # 먼저 돌린 실행도 새 명부로 갱신된다
+        self.assertEqual(rows1["Alpha"]["proposal_vertical"], "건설")
+        self.assertIn("오피스", rows1["Alpha"]["other_verticals"])
         with open(os.path.join(self.root, "_registry", "company_facts.json"), encoding="utf-8") as f:
             facts = json.load(f)
         self.assertEqual(sorted(facts["alpha.com"]["items"]), ["A1", "A2", "B2", "D2"])
         code, out = run("registry", self.root, "--config", self.cfg)
         self.assertEqual(code, 0, out)
-        self.assertIn("제안 대상 2곳", out)
+        self.assertIn("제안 대상 3곳", out)
+
+    def test_later_knockout_and_tie_refresh_earlier_run(self):
+        self.write("records/u1.json", {"unit": "u1", "companies": [
+            target("Alpha", "https://alpha.com", ["중"] * 8), target("Beta", "https://beta.com", ["상"] * 8)]})
+        run("score", self.dir, "--config", self.cfg)
+        run2 = self.make_run("aaa-run2", "오피스")                # 폴더명이 앞서도 실행 순서는 run.json 기준
+        os.utime(os.path.join(run2, "run.json"), (os.path.getmtime(os.path.join(self.dir, "run.json")) + 10,) * 2)
+        self.write("records/u1.json", {"unit": "u1", "companies": [
+            target("Alpha", "https://alpha.com", ["중"] * 8),                  # 동점
+            target("Beta", "https://beta.com", ["상"] * 8, ko_hit="K2")]}, run_dir=run2)
+        code, out = run("score", run2, "--config", self.cfg)
+        self.assertIn("다른 실행 갱신: run1", out)
+        rows1 = {r["company"]: r for r in self.rows()}
+        self.assertEqual(rows1["Alpha"]["proposal_vertical"], "건설")      # 동점이면 먼저 실행한 버티컬
+        self.assertIn("타버티컬KO", rows1["Beta"]["review_flag"])           # 나중 실행의 KO 가 앞 실행에도 반영
+        self.assertEqual(rows1["Beta"]["proposal_vertical"], "")
 
     def test_new_run_korean_folder_name(self):
         out_dir = os.path.join(self.root, "out")

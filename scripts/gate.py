@@ -87,6 +87,25 @@ def run_folder_name(vertical, date):
     return f"{name}-{date}"
 
 
+def run_created(run_dir):
+    """실행 순서 기준. run.json 의 created(new-run 이 기록), 없으면 run.json 수정 시각.
+    채점을 다시 해도 바뀌지 않아야 하므로 scored.json 시각은 쓰지 않는다."""
+    meta = load_json(os.path.join(run_dir, "run.json"))
+    if isinstance(meta, dict) and meta.get("created"):
+        try:
+            return datetime.datetime.fromisoformat(meta["created"]).timestamp()
+        except ValueError:
+            pass
+    path = os.path.join(run_dir, "run.json")
+    return os.path.getmtime(path) if os.path.exists(path) else 0.0
+
+
+def run_config(run_dir, cfg):
+    """실행 폴더에 top_n 등을 덮어쓴 설정이 있으면 그것을 쓴다."""
+    path = os.path.join(run_dir, "config.override.md")
+    return load_config(path) if os.path.exists(path) else cfg
+
+
 def run_vertical(run_dir):
     meta = load_json(os.path.join(run_dir, "run.json"))
     if isinstance(meta, dict) and meta.get("vertical"):
@@ -309,31 +328,35 @@ def write_scored(run_dir, cfg, active, dropped):
 def build_registry(output_dir, cfg):
     """모든 실행의 scored.json 을 모아 업체 1곳 = 1행 명부를 만든다. {key: entry} 반환."""
     latest = {}  # 같은 버티컬을 다시 돌렸으면 가장 최근 실행만 쓴다
-    paths = [p for p in glob.glob(os.path.join(output_dir, "*", "scored.json"))
-             if os.path.basename(os.path.dirname(p)) != REGISTRY]
-    for path in sorted(paths, key=lambda p: (os.path.getmtime(p), p)):
-        data = load_json(path)
+    dirs = [os.path.dirname(p) for p in glob.glob(os.path.join(output_dir, "*", "scored.json"))
+            if os.path.basename(os.path.dirname(p)) != REGISTRY]
+    for d in sorted(dirs, key=lambda d: (run_created(d), d)):
+        data = load_json(os.path.join(d, "scored.json"))
         if isinstance(data, dict):
+            data["_dir"], data["_order"] = d, run_created(d)
             latest[data.get("vertical")] = data
-    runs = list(latest.values())
+    runs = sorted(latest.values(), key=lambda r: (r["_order"], r["run"]))
     company_ids = [s["id"] for s in cfg["scoring"] if s["scope"] == "company"]
     reg = {}
     for run in runs:
         for c in run["companies"]:
             e = reg.setdefault(c["key"], {"key": c["key"], "company": c["company"], "homepage": c["homepage"],
                                          "entries": [], "lines": [], "facts": {}})
-            e["entries"].append(dict(c, vertical=run["vertical"], run=run["run"]))
+            e["entries"].append(dict(c, vertical=run["vertical"], run=run["run"], order=run["_order"]))
             e["lines"] += c.get("business_lines") or []
             for sid in company_ids:
                 s = c["company_scores"].get(sid) or {}
                 if s.get("level", UNKNOWN) != UNKNOWN and (sid not in e["facts"] or c["verified"]):
                     e["facts"][sid] = dict(s, run=run["run"], verified=c["verified"])
     for e in reg.values():
-        ko = [x for x in e["entries"] if x["excluded_scope"] == "company"]
+        # Knock-Out 은 회사 단위다. 회사 단위 판정을 내린 실행 가운데 가장 최근 것을 따른다
+        judged = [x for x in e["entries"] if x["excluded_scope"] != "run"]
+        last = max(judged, key=lambda x: x["order"]) if judged else None
         active = [x for x in e["entries"] if not x["excluded"]]
         researched = {x["vertical"] for x in e["entries"]}
-        e["excluded"] = ko[0]["excluded"] + f" ({ko[0]['vertical']})" if ko else ""
-        e["active"] = sorted(active, key=lambda x: (-x["total"], x["unknown"], x["run"]))
+        e["excluded"] = last["excluded"] + f" ({last['vertical']})"             if last and last["excluded_scope"] == "company" else ""
+        # 동점이면 확인불가가 적은 쪽, 그다음 먼저 실행한 버티컬
+        e["active"] = sorted(active, key=lambda x: (-x["total"], x["unknown"], x["order"], x["vertical"]))
         e["primary"] = None if e["excluded"] or not e["active"] else e["active"][0]
         e["declared"] = sorted({b["vertical"] for b in e["lines"] if b["vertical"] not in researched})
         e["multi"] = len({x["vertical"] for x in e["active"]}) > 1 or bool(e["declared"])
@@ -342,8 +365,11 @@ def build_registry(output_dir, cfg):
             levels = {x["company_scores"].get(sid, {}).get("level") for x in e["entries"]} - {None, UNKNOWN}
             if len(levels) > 1:
                 flags.append(f"{sid} 회사공통 불일치({'/'.join(sorted(levels))})")
+        ko_runs = [x for x in judged if x["excluded_scope"] == "company"]
+        if ko_runs and last["excluded_scope"] != "company":
+            flags.append(f"KO 판정 변경({ko_runs[-1]['vertical']} 제외 → {last['vertical']} 해당 없음)")
         e["flags"] = flags
-    return reg
+    return reg, runs
 
 
 def write_registry(output_dir, cfg, reg):
@@ -437,6 +463,24 @@ def write_outputs(run_dir, cfg, active, dropped, reg):
         f.write("\n".join(lines))
 
 
+def refresh_runs(cfg, reg, runs, skip=None):
+    """명부가 바뀌면 다른 실행의 candidates.csv·evidence.md 도 새 명부 기준으로 다시 쓴다.
+    점수는 그대로이고 제안 버티컬·다른 버티컬·검토 표시만 바뀐다. 반환: 다시 쓴 실행 이름 목록."""
+    done = []
+    for run in runs:
+        d = run["_dir"]
+        if skip and os.path.normcase(os.path.abspath(d)) == os.path.normcase(os.path.abspath(skip)):
+            continue
+        rcfg = run_config(d, cfg)
+        errors, res = compute(d, rcfg)
+        if errors:
+            print(f"WARN: {run['run']} 다시 쓰기 건너뜀 ({len(errors)}건 오류)")
+            continue
+        write_outputs(d, rcfg, *res, reg)
+        done.append(run["run"])
+    return done
+
+
 # ---------------------------------------------------------------- commands
 
 def print_errors(title, errors):
@@ -464,14 +508,17 @@ def cmd_score(args, cfg):
     active, dropped = res
     write_scored(args.dir, cfg, active, dropped)
     output_dir = os.path.dirname(os.path.abspath(os.path.normpath(args.dir)))
-    reg = build_registry(output_dir, cfg)
+    reg, runs = build_registry(output_dir, cfg)
     write_registry(output_dir, cfg, reg)
     write_outputs(args.dir, cfg, active, dropped, reg)
+    refreshed = refresh_runs(cfg, reg, runs, skip=args.dir)
     top_n = int(cfg["top_n"])
     flagged = sum(1 for r in active if r["flags"])
     multi = sum(1 for r in active if r["others"])
     print(f"PASS score: 순위 {len(active)}곳 · 제외 {len(dropped)}곳 · 검토 표시 {flagged}곳 · 다중 버티컬 {multi}곳")
     print(f"명부: {os.path.join(output_dir, REGISTRY)} (전체 {len(reg)}곳)")
+    if refreshed:
+        print(f"다른 실행 갱신: {', '.join(refreshed)} (candidates.csv·evidence.md)")
     if len(active) < top_n:
         print(f"WARN: 순위 업체 {len(active)}곳 < top_n {top_n} — 추가 조사 필요")
         return 1
@@ -479,11 +526,14 @@ def cmd_score(args, cfg):
 
 
 def cmd_registry(args, cfg):
-    reg = build_registry(args.dir, cfg)
+    reg, runs = build_registry(args.dir, cfg)
     if not reg:
         print("FAIL registry: scored.json 이 있는 실행 폴더가 없음")
         return 1
     write_registry(args.dir, cfg, reg)
+    refreshed = refresh_runs(cfg, reg, runs)
+    if refreshed:
+        print(f"실행 갱신: {', '.join(refreshed)} (candidates.csv·evidence.md)")
     n = sum(1 for e in reg.values() if e["primary"])
     print(f"PASS registry: 전체 {len(reg)}곳 · 제안 대상 {n}곳 · 다중 버티컬 {sum(1 for e in reg.values() if e['multi'] and e['primary'])}곳")
     return 0
@@ -572,7 +622,8 @@ def cmd_new_run(args):
         os.makedirs(os.path.join(path, sub))
     regions = [r.strip() for r in (args.regions or "").split(",") if r.strip()]
     with open(os.path.join(path, "run.json"), "w", encoding="utf-8") as f:
-        json.dump({"vertical": args.vertical.strip(), "regions": regions, "date": today.isoformat()},
+        json.dump({"vertical": args.vertical.strip(), "regions": regions, "date": today.isoformat(),
+                   "created": datetime.datetime.now().isoformat(timespec="seconds")},
                   f, ensure_ascii=False, indent=1)
     print(os.path.abspath(path))
     return 0
