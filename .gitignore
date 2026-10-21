@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+research/
+.claude/vertical-research.config.md

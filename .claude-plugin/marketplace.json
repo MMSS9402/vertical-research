@@ -1,0 +1,16 @@
+{
+  "name": "vertical-research",
+  "owner": {
+    "name": "MMSS9402"
+  },
+  "description": "vertical-research 플러그인 자체 호스팅 마켓플레이스",
+  "plugins": [
+    {
+      "name": "vertical-research",
+      "source": "./",
+      "description": "버티컬 업체 조사 멀티 에이전트 파이프라인 — 계획→조사→검증→채점→보고서→한국어 심사 (/vertical-research:run)",
+      "category": "research",
+      "tags": ["research", "multi-agent", "korean"]
+    }
+  ]
+}
