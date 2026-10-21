@@ -147,6 +147,23 @@ class GateTest(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("WARN", out)
 
+    def test_verify_homepage_correction_feeds_merge(self):
+        self.base_records()
+        run("score", self.dir, "--config", self.cfg)
+        n_before = len(self.rows())
+        self.write("verify/u2.json", {"unit": "u2", "companies": [
+            {"company": "Delta", "status": "fix", "homepage": "https://www.beta.com/ko"},
+            {"company": "Alpha Inc", "status": "ok"},
+            {"company": "Ghost", "status": "fix", "homepage": "기사 링크"},
+        ]})
+        run("score", self.dir, "--config", self.cfg)
+        rows = self.rows()
+        # Delta 의 홈페이지가 beta.com 으로 고쳐져 Beta 와 같은 업체로 합쳐진다
+        self.assertEqual(len(rows), n_before - 1)
+        merged = [r for r in rows if r["company"] in ("Beta", "Delta")]
+        self.assertEqual(len(merged), 1)
+        self.assertIn("beta.com", merged[0]["homepage"])
+
     def test_check_report(self):
         self.base_records()
         run("score", self.dir, "--config", self.cfg)

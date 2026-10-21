@@ -177,6 +177,7 @@ run_log.md            # 드라이버가 단계별 결과를 append
 
 - `status`: `ok` (유지) · `fix` (일부 수정) · `drop` (실존 확인 불가·중복·범위 밖 → 제외).
 - `items.*.verdict`: `confirmed` · `corrected` (level/evidence/source 교체) · `unsupported` (확인불가로 강등).
+- `homepage` (선택): records 의 홈페이지가 비었거나 틀렸을 때만 공식 홈페이지 URL 을 적는다. 스크립트가 records 값을 이것으로 바꾸고, 같은 업체 병합도 이 값으로 한다.
 - `knockout` 에는 판정을 **바꾸는** 항목만 적는다.
 - records 에 있는 업체는 빠짐없이 한 번씩 다룬다.
 

@@ -71,3 +71,5 @@ ko_review.json 의 `quote` 를 찾아 고친다. 고친 문장이 다시 다른 
 ## 출력
 
 `report.md` 를 저장하고, 최종 응답은 2줄: 분량(대략 글자 수)과 반영한 지적 수(재작성 회차일 때).
+
+하네스가 보고서 파일 쓰기를 막으면("Subagents should return findings as text…" 등) 다시 시도하지 말고, 최종 응답에 2줄 요약 뒤 보고서 전문을 `=====BEGIN report.md=====` 와 `=====END report.md=====` 사이에 그대로 넣는다. 드라이버가 저장한다.

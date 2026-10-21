@@ -18,7 +18,7 @@ argument-hint: [제품 사양 문서 경로 — 선택]
    - 제안 담당자 직책: `담당자`, `Contact`, `Product Manager` 로 찾는다.
 4. 템플릿의 가상 예시를 실제 값으로 바꿔 `.claude/vertical-research.config.md` 를 Write. 못 찾은 키는 `"TODO: ..."` 문자열로 둔다.
 5. `public_terms` 와 `confidential` 은 반드시 사용자에게 확인한다 — 검색어로 써도 되는 공개 명칭과, 절대 외부로 나가면 안 되는 항목.
-6. 검증: `PY=$(command -v python3 || command -v python)` 후 빈 임시 폴더를 만들어 `"$PY" "${CLAUDE_PLUGIN_ROOT}/scripts/gate.py" check-records <임시폴더> --config .claude/vertical-research.config.md` 를 실행한다. "records 없음" 오류는 정상이다 (설정 파싱이 통과했다는 뜻). `ERROR:` 로 시작하는 설정 오류가 나오면 고친다.
+6. 검증: 파이썬을 찾고 (run.md 0단계 3번과 같은 방법: `for c in python3 python py; do "$c" -c "import sys; assert sys.version_info >= (3, 8)" 2>/dev/null && { echo "$c"; break; }; done`) 그 실행 파일로 빈 임시 폴더를 만들어 `"$PY" "${CLAUDE_PLUGIN_ROOT}/scripts/gate.py" check-records <임시폴더> --config .claude/vertical-research.config.md` 를 실행한다. "records 없음" 오류는 정상이다 (설정 파싱이 통과했다는 뜻). `ERROR:` 로 시작하는 설정 오류가 나오면 고친다.
 7. 사용자에게 보고: 채운 값, 남은 TODO, 실행 예시 `/vertical-research:run "건설현장 출입통제" Global 40`.
 
 ## 주의

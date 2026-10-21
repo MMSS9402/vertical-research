@@ -174,6 +174,8 @@ def apply_verify(c, v):
     c["_verified"] = True
     if v.get("status") == "drop":
         return f"검증 제외: {v.get('reason') or '사유 미기재'}"
+    if is_url(v.get("homepage")):
+        c["homepage"] = v["homepage"]
     for kid, k in (v.get("knockout") or {}).items():
         if isinstance(k, dict) and isinstance(k.get("hit"), bool):
             c.setdefault("knockout", {})[kid] = k
