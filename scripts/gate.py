@@ -71,13 +71,17 @@ def is_url(s):
     return isinstance(s, str) and re.match(r"https?://\S+", s) is not None
 
 
+def name_key(name):
+    return re.sub(r"[^0-9a-z가-힣]", "", (name or "").lower())
+
+
 def company_key(c):
     host = urlparse(c.get("homepage") or "").netloc.lower()
     if host.startswith("www."):
         host = host[4:]
     if host:
         return host
-    return re.sub(r"[^0-9a-z가-힣]", "", (c.get("company") or "").lower())
+    return name_key(c.get("company"))
 
 
 def run_folder_name(vertical, date):
@@ -309,7 +313,7 @@ def compute(run_dir, cfg):
 def write_scored(run_dir, cfg, active, dropped):
     """실행 결과를 명부가 읽을 수 있는 scored.json 으로 남긴다."""
     company_ids = [s["id"] for s in cfg["scoring"] if s["scope"] == "company"]
-    out = {"vertical": run_vertical(run_dir), "run": os.path.basename(os.path.normpath(run_dir)), "companies": []}
+    out = {"vertical": run_vertical(run_dir), "run": os.path.basename(os.path.abspath(run_dir)), "companies": []}
     for r in active + dropped:
         c = r["c"]
         out["companies"].append({
@@ -348,6 +352,17 @@ def build_registry(output_dir, cfg):
                 s = c["company_scores"].get(sid) or {}
                 if s.get("level", UNKNOWN) != UNKNOWN and (sid not in e["facts"] or c["verified"]):
                     e["facts"][sid] = dict(s, run=run["run"], verified=c["verified"])
+    # 홈페이지 없이 이름으로 잡힌 업체가 다른 실행에서 홈페이지와 함께 나왔으면 하나로 합친다
+    by_name = {name_key(x["company"]): e for e in reg.values() if "." in e["key"] for x in e["entries"]}
+    for k in [k for k in reg if "." not in k]:
+        host = by_name.get(k)
+        if host:
+            e = reg.pop(k)
+            host["entries"] += e["entries"]
+            host["lines"] += e["lines"]
+            for sid, v in e["facts"].items():
+                host["facts"].setdefault(sid, v)
+            host.setdefault("aliases", set()).add(k)
     for e in reg.values():
         # Knock-Out 은 회사 단위다. 회사 단위 판정을 내린 실행 가운데 가장 최근 것을 따른다
         judged = [x for x in e["entries"] if x["excluded_scope"] != "run"]
@@ -411,7 +426,8 @@ def write_outputs(run_dir, cfg, active, dropped, reg):
     top_n = int(cfg["top_n"])
     vertical = run_vertical(run_dir)
     for r in active + dropped:
-        e = reg.get(r["c"]["_key"]) or {}
+        key = r["c"]["_key"]
+        e = reg.get(key) or next((x for x in reg.values() if key in x.get("aliases", ())), {})
         p = e.get("primary")
         r["proposal_vertical"] = p["vertical"] if p else ""
         r["others"] = [f"{x['vertical']}({x['total']})" for x in e.get("active", []) if x["vertical"] != vertical] + \
