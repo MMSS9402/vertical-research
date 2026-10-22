@@ -299,6 +299,17 @@ class GateTest(unittest.TestCase):
         rows1 = {r["company"]: r for r in self.rows()}
         self.assertIn("타버티컬제안", rows1["Omega"]["review_flag"])
 
+    def test_name_only_company_ignores_parenthetical_alias(self):
+        self.write("records/u1.json", {"unit": "u1", "companies": [target("휴먼인텍", "", ["상"] * 8)]})
+        run("score", self.dir, "--config", self.cfg)
+        run2 = self.make_run("run2", "오피스")
+        self.write("records/u1.json", {"unit": "u1", "companies": [
+            target("휴먼인텍 (Humanintec)", "", ["중"] * 8)]}, run_dir=run2)
+        run("score", run2, "--config", self.cfg)
+        with open(os.path.join(self.root, "_registry", "companies.csv"), encoding="utf-8-sig") as f:
+            reg = [r for r in csv.DictReader(f) if r["company"].startswith("휴먼인텍")]
+        self.assertEqual(len(reg), 1)
+
     def test_new_run_korean_folder_name(self):
         out_dir = os.path.join(self.root, "out")
         code, out = run("new-run", out_dir, "--vertical", "건설·산업현장 출입통제/출역관리", "--regions", "Korea")

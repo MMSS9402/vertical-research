@@ -72,7 +72,10 @@ def is_url(s):
 
 
 def name_key(name):
-    return re.sub(r"[^0-9a-z가-힣]", "", (name or "").lower())
+    # 괄호 속 영문명·옛 이름·사업부는 빼고 본래 이름으로 비교한다 ("휴먼인텍 (Humanintec)" = "휴먼인텍")
+    name = (name or "").lower()
+    base = re.sub(r"[^0-9a-z가-힣]", "", re.sub(r"\([^)]*\)", "", name))
+    return base or re.sub(r"[^0-9a-z가-힣]", "", name)
 
 
 def company_key(c):
@@ -344,6 +347,7 @@ def build_registry(output_dir, cfg):
     reg = {}
     for run in runs:
         for c in run["companies"]:
+            c["key"] = company_key(c)            # 예전 실행이 저장한 키는 규칙이 바뀌었을 수 있어 다시 계산한다
             e = reg.setdefault(c["key"], {"key": c["key"], "company": c["company"], "homepage": c["homepage"],
                                          "entries": [], "lines": [], "facts": {}})
             e["entries"].append(dict(c, vertical=run["vertical"], run=run["run"], order=run["_order"]))
