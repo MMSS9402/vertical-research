@@ -5,7 +5,7 @@ argument-hint: '"<버티컬/Application>" [지역] [top_n]'
 
 당신(메인 Claude)이 **드라이버**다. 직접 조사하거나 보고서를 쓰지 않는다. 에이전트를 호출하고, 파일을 옮기고, 게이트를 Bash 로 판정한다. 컨텍스트를 아끼려고 에이전트 산출물 전문은 읽지 않는다 — 게이트 결과와 에이전트 최종 요약만 본다.
 
-**인자**: $ARGUMENTS — 첫 인자(따옴표)가 버티컬. 이어서 지역(선택), 맨 끝이 정수면 top_n 덮어쓰기.
+**인자**: $ARGUMENTS — 첫 인자(따옴표)가 버티컬. 이어서 지역(선택), 맨 끝이 정수면 top_n 덮어쓰기. 지역은 설정 `region_groups` 의 대륙 이름(예: `북미`, `남미`, 쉼표로 여럿)이나 국가명이다.
 
 진행 상황은 할 일 목록 도구가 있으면 단계별로 갱신한다 ("조사 계획", "업체 조사", "검증", "채점", "보고서 작성", "한국어 심사").
 
@@ -16,8 +16,9 @@ argument-hint: '"<버티컬/Application>" [지역] [top_n]'
 3. 파이썬 확인: `for c in python3 python py; do "$c" -c "import sys; assert sys.version_info >= (3, 8)" 2>/dev/null && { echo "$c"; break; }; done` 로 실제로 실행되는 파이썬을 찾는다 (Windows 의 Microsoft Store 가짜 `python3` 는 `command -v` 로는 잡히지만 실행되지 않는다). 아무것도 안 나오면 멈춘다. 셸 변수는 Bash 호출 사이에 유지되지 않으므로, 아래 게이트 명령의 `$PY`·`$GATE`·`$RUN`·`$CFG` 는 매번 실제 경로로 바꿔 쓴다 (`GATE` = `${CLAUDE_PLUGIN_ROOT}/scripts/gate.py`).
 4. 버티컬 표기를 정한다. 명부는 이 표기로 버티컬을 구분하므로, 같은 버티컬의 이전 실행(`<output_dir>/*/run.json`)이 있으면 그 `vertical` 표기를 그대로 쓴다. 이어서 실행 폴더를 스크립트로 만든다:
    ```bash
-   "$PY" "$GATE" new-run "<output_dir>" --vertical "<버티컬 표기>" --regions "<지역1>,<지역2>"
+   "$PY" "$GATE" new-run "<output_dir>" --vertical "<버티컬 표기>" --regions "<지역1>,<지역2>" --config "<설정 파일 경로>"
    ```
+   지역이 `region_groups` 의 이름이면 `run.json` 의 `countries` 에 국가 코드 목록이 들어간다.
    출력된 경로가 `RUN` 이다. 폴더명은 버티컬 표기(한국어 그대로) + 날짜이고, 폴더명에 못 쓰는 문자와 공백은 `-` 로 바뀐다 (예: `건설·산업현장-출입통제-출역관리-20261021`). 이미 있으면 `-2`, `-3` 이 붙는다. 하위 `notes/ records/ verify/` 와 `run.json` 도 함께 만들어진다. 직접 폴더를 만들거나 이전 실행 폴더에 쓰지 않는다.
 5. top_n 을 인자로 덮어쓰면 `RUN/config.override.md` 에 설정 파일을 복사하고 json 블록의 `top_n` 만 바꾼 뒤, 이후 `--config` 로 그 파일을 쓴다. 아니면 원래 설정 파일 경로를 쓴다. 이를 `CFG` 라 한다.
 6. 모호함 확인: 버티컬 이름이 여러 뜻으로 읽히거나 지역이 결과를 크게 바꾸는데 인자에 없으면, **한 번만** 사용자에게 묻는다. 답이 없으면 설정 기본값으로 진행한다.
@@ -30,6 +31,7 @@ argument-hint: '"<버티컬/Application>" [지역] [top_n]'
 제품 사양: <설정의 product_spec 절대경로>
 실행 폴더: <RUN 절대경로>
 업체 명부: <output_dir 절대경로>/_registry/ (없으면 "없음")
+조사 지역: <지역> (국가: <run.json 의 countries, 없으면 생략>)
 ```
 
 ## 1) P — planner
@@ -46,7 +48,7 @@ plan.md 의 단위마다 `Agent(subagent_type="vertical-research:researcher", ru
 ```bash
 "$PY" "$GATE" check-records "$RUN" --config "$CFG"
 ```
-- PASS → 4단계.
+- PASS → 4단계. `WARN: 조사 지역 밖 target` 이 있으면 run_log.md 에 적고 마무리 보고에 넣는다 (실패로 다루지 않는다).
 - FAIL → 오류 줄을 단위별로 나눠, 해당 단위 researcher 를 **새로** 호출해 "records 의 형식 오류만 고쳐라 (재조사 금지, 확인 못 하면 확인불가)" + 오류 줄 원문을 준다. 병렬로. 다시 G1. 2회 연속 같은 오류면 멈추고 보고.
 
 ## 4) V — verifier (병렬)

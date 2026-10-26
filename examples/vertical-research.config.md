@@ -22,6 +22,10 @@
   "output_dir": "research",
   "top_n": 20,
   "regions": ["Global"],
+  "region_groups": {
+    "북미": ["US", "CA", "MX"],
+    "남미": ["AR", "BO", "BR", "CL", "CO", "EC", "GY", "PE", "PY", "SR", "UY", "VE"]
+  },
   "public_terms": ["face recognition", "access control", "time and attendance", "VMS", "visitor management"],
   "confidential": ["미공개 로드맵", "고객사 단가", "내부 성능 시험 원본"],
   "contact_roles": [
@@ -33,7 +37,8 @@
     {"id": "K1", "name": "직접 경쟁사", "rule": "자체 FR 엔진/SDK/API 를 제품으로 판매", "check": "홈페이지에 FR Engine/SDK/API 가 별도 제품으로 있는지"},
     {"id": "K2", "name": "단순 유통업체", "rule": "자체 제품 없이 타사 제품만 판매", "check": "제품 목록이 타사 브랜드 위주인지"},
     {"id": "K3", "name": "관련 사업 없음", "rule": "출입통제·보안·인증 관련 제품이 없음", "check": "AC, VMS, CCTV, Identity, Kiosk 제품 존재 여부"},
-    {"id": "K4", "name": "활동 확인 불가", "rule": "현재 사업 운영 여부를 확인할 수 없음", "check": "최근 2년 내 뉴스·제품 업데이트 존재 여부"}
+    {"id": "K4", "name": "활동 확인 불가", "rule": "현재 사업 운영 여부를 확인할 수 없음", "check": "최근 2년 내 뉴스·제품 업데이트 존재 여부"},
+    {"id": "K5", "name": "SDK 개발 주체 아님", "rule": "엔진 SDK 를 받아 자기 제품·솔루션에 넣어 개발하는 사업이 없음. 본업이 통신·유통·금융·숙박 같은 서비스 운영이고 솔루션은 사서 쓰는 최종 이용 기업", "check": "자체 개발한 SW·HW 제품을 외부 고객에게 팔거나 SI·솔루션 구축 사업을 하는지. 사내 개발팀이 자사 서비스만 만들면 해당"}
   ],
   "scoring": [
     {"id": "A1", "scope": "company", "area": "기업 규모", "name": "매출 규모", "max": 15, "levels": {"상": 15, "중": 10, "하": 5},

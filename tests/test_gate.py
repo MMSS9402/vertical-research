@@ -12,7 +12,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GATE = os.path.join(ROOT, "scripts", "gate.py")
 CONFIG = os.path.join(ROOT, "examples", "vertical-research.config.md")
 SCORING = ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2"]
-KO = ["K1", "K2", "K3", "K4"]
+KO = ["K1", "K2", "K3", "K4", "K5"]
 
 
 def target(name, home, levels, ko_hit=None):
@@ -324,6 +324,24 @@ class GateTest(unittest.TestCase):
         self.assertEqual(meta["regions"], ["Korea"])
         code, out2 = run("new-run", out_dir, "--vertical", "건설·산업현장 출입통제/출역관리")
         self.assertEqual(out2.strip(), path + "-2")           # 이전 실행 폴더는 건드리지 않는다
+        self.assertNotIn("countries", meta)                   # 설정 없이 만든 실행은 국가 제한이 없다
+
+    def test_new_run_expands_region_group_and_warns_outside(self):
+        code, out = run("new-run", self.root, "--vertical", "건설", "--regions", "북미,남미", "--config", self.cfg)
+        self.assertEqual(code, 0, out)
+        path = out.strip()
+        with open(os.path.join(path, "run.json"), encoding="utf-8") as f:
+            meta = json.load(f)
+        self.assertEqual(meta["regions"], ["북미", "남미"])
+        self.assertIn("US", meta["countries"])
+        self.assertIn("BR", meta["countries"])
+        us = target("Acme", "https://acme.com", ["상"] * 8)
+        us["country"] = "US"
+        self.write("records/u1.json", {"unit": "u1", "companies": [us, target("Beta", "https://beta.kr", ["상"] * 8)]},
+                   run_dir=path)
+        code, out = run("check-records", path, "--config", self.cfg)
+        self.assertEqual(code, 0, out)                        # 지역 밖 업체는 경고만 한다
+        self.assertIn("WARN: 조사 지역 밖 target 1곳 — Beta (KR)", out)
 
 
 if __name__ == "__main__":

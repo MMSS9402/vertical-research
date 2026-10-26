@@ -47,7 +47,7 @@ plan.md
 notes/<unit>.md
 records/<unit>.json
 verify/<unit>.json
-run.json              # 드라이버: {"vertical": "...", "regions": [...], "date": "YYYY-MM-DD"}
+run.json              # 드라이버: {"vertical": "...", "regions": [...], "countries": [...], "date": "YYYY-MM-DD"} (countries 는 대륙 지역일 때만)
 scored.json           # 스크립트 생성 (명부 입력)
 candidates.csv        # 스크립트 생성
 evidence.md           # 스크립트 생성
@@ -81,6 +81,7 @@ run_log.md            # 드라이버가 단계별 결과를 append
 | `output_dir` | 실행 폴더 상위 경로 |
 | `top_n` | 최종 후보 수 |
 | `regions` | 기본 조사 지역 |
+| `region_groups` | (선택) 대륙 지역 이름 → 국가 코드 목록. 예: `{"북미": ["US","CA","MX"], "남미": ["BR","AR",...]}`. 실행 인자 지역이 이 이름이면 `new-run` 이 `run.json` 의 `countries` 로 풀어 둔다 |
 | `knockout` | 제외 기준 목록 `{id, name, rule, check}` |
 | `scoring` | 평가 항목 목록 `{id, scope, area, name, max, levels:{상,중,하}, check, guide}`. `scope` 는 `company`/`vertical` (생략 시 `vertical`) |
 | `contact_roles` | 제안 담당자 직책 우선순위 |
@@ -143,7 +144,8 @@ run_log.md            # 드라이버가 단계별 결과를 append
 }
 ```
 
-- `segment`: `target` (채점 대상) 또는 `competitor` (경쟁사, 채점 안 함).
+- `segment`: `target` (채점 대상) 또는 `competitor` (경쟁사, 채점 안 함). target 은 엔진 SDK 를 받아 자기 제품·솔루션에 넣어 개발할 주체다. 솔루션을 사서 쓰는 최종 이용 기업(통신·유통·금융·숙박 운영사 등)은 target 이 아니다.
+- `country`: 본사 국가 코드(ISO 2자리). 지역 법인이 사업 주체면 그 법인 국가.
 - `target` 은 설정의 **모든** knockout id 와 **모든** scoring id 를 채운다.
 - `level` 은 `상`·`중`·`하`·`확인불가` 중 하나. `확인불가` 가 아니면 `evidence` 와 `source`(http/https URL) 가 반드시 있다.
 - `scope: vertical` 항목은 `확인불가` 가 아니면 `division` 도 반드시 있다.
@@ -202,7 +204,7 @@ run_log.md            # 드라이버가 단계별 결과를 append
 
 | 명령 | 통과 조건 |
 |---|---|
-| `check-records` | 모든 records JSON 이 4-2 형식을 지킴. 누락된 knockout/scoring id 0건, 출처 없는 등급 0건, 사업부 없는 버티컬 항목 0건 |
+| `check-records` | 모든 records JSON 이 4-2 형식을 지킴. 누락된 knockout/scoring id 0건, 출처 없는 등급 0건, 사업부 없는 버티컬 항목 0건. `run.json` 에 `countries` 가 있으면 그 밖의 target 을 WARN 으로 알린다 (실패 아님) |
 | `score` | (항상 실행) verify 반영 → 같은 업체 병합 → Knock-Out → 합산 → 정렬 → 명부 갱신. 형식 오류가 있으면 실패 |
 | `registry` | 명부만 다시 만든다 (`<output_dir>` 를 인자로) |
 | `check-report` | report.md 존재, candidates.csv 의 Top N 업체명이 모두 본문에 등장 |

@@ -2,7 +2,7 @@
 """vertical-research gate: 산출물 형식 검사, Knock-Out·채점·순위 계산, 실행 간 업체 명부.
 
 Usage:
-  gate.py new-run       <output_dir> --vertical <버티컬> [--regions Korea,Global]   (실행 폴더 생성, 경로 출력)
+  gate.py new-run       <output_dir> --vertical <버티컬> [--regions 북미,남미] [--config <config.md>]   (실행 폴더 생성, 경로 출력)
   gate.py check-records <run_dir> --config <config.md>
   gate.py score         <run_dir> --config <config.md>   (명부도 함께 갱신)
   gate.py registry      <output_dir> --config <config.md>
@@ -56,6 +56,9 @@ def load_config(path):
         item.setdefault("scope", "vertical")
         if item["scope"] not in SCOPES:
             die(f"scoring {item.get('id')} 의 scope 는 company/vertical 중 하나여야 함")
+    groups = cfg.setdefault("region_groups", {})
+    if not isinstance(groups, dict) or not all(isinstance(v, list) and v for v in groups.values()):
+        die("region_groups 는 {지역 이름: [국가 코드, ...]} 형식이어야 함")
     return cfg
 
 
@@ -111,6 +114,14 @@ def run_config(run_dir, cfg):
     """실행 폴더에 top_n 등을 덮어쓴 설정이 있으면 그것을 쓴다."""
     path = os.path.join(run_dir, "config.override.md")
     return load_config(path) if os.path.exists(path) else cfg
+
+
+def run_countries(run_dir):
+    """run.json 에 대륙 지역을 풀어 둔 국가 코드가 있으면 그 집합, 없으면 None (국가 제한 없음)."""
+    meta = load_json(os.path.join(run_dir, "run.json"))
+    if isinstance(meta, dict) and meta.get("countries"):
+        return {c.upper() for c in meta["countries"]}
+    return None
 
 
 def run_vertical(run_dir):
@@ -517,6 +528,13 @@ def cmd_check_records(args, cfg):
     n = sum(len(v) for v in units.values())
     t = sum(1 for v in units.values() for c in v if c["segment"] == "target")
     print(f"PASS check-records: 단위 {len(units)}개 · 업체 {n}곳 (target {t})")
+    countries = run_countries(args.dir)
+    if countries:
+        # 지역 밖 업체는 실패로 막지 않는다 — 지역 법인이 있는 외국 업체일 수 있어 사람이 본다
+        outside = [f"{c['company']} ({c.get('country') or '국가 없음'})" for v in units.values() for c in v
+                   if c["segment"] == "target" and (c.get("country") or "").upper() not in countries]
+        if outside:
+            print(f"WARN: 조사 지역 밖 target {len(outside)}곳 — {', '.join(outside)}")
     return 0
 
 
@@ -641,10 +659,15 @@ def cmd_new_run(args):
     for sub in ("notes", "records", "verify"):
         os.makedirs(os.path.join(path, sub))
     regions = [r.strip() for r in (args.regions or "").split(",") if r.strip()]
+    meta = {"vertical": args.vertical.strip(), "regions": regions, "date": today.isoformat(),
+            "created": datetime.datetime.now().isoformat(timespec="seconds")}
+    # 대륙 지역(설정의 region_groups)은 국가 코드로 풀어 둔다. 설정에 없는 지역(Korea 등)은 이름만 남는다
+    groups = load_config(args.config)["region_groups"] if args.config else {}
+    countries = [c.upper() for r in regions for c in groups.get(r, [])]
+    if countries:
+        meta["countries"] = sorted(set(countries))
     with open(os.path.join(path, "run.json"), "w", encoding="utf-8") as f:
-        json.dump({"vertical": args.vertical.strip(), "regions": regions, "date": today.isoformat(),
-                   "created": datetime.datetime.now().isoformat(timespec="seconds")},
-                  f, ensure_ascii=False, indent=1)
+        json.dump(meta, f, ensure_ascii=False, indent=1)
     print(os.path.abspath(path))
     return 0
 
@@ -658,7 +681,7 @@ def main():
     p.add_argument("dir", help="실행 폴더 (registry 는 output_dir)")
     p.add_argument("--config")
     p.add_argument("--vertical", help="new-run: 버티컬 표기")
-    p.add_argument("--regions", help="new-run: 쉼표로 구분한 지역")
+    p.add_argument("--regions", help="new-run: 쉼표로 구분한 지역 (설정의 region_groups 이름이면 국가 코드로 풀린다)")
     args = p.parse_args()
     if args.command == "new-run":
         if not args.vertical or not args.vertical.strip():
