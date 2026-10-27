@@ -318,6 +318,10 @@ def compute(run_dir, cfg):
             flags.append("경계")
         if not r["c"]["_verified"]:
             flags.append("미검증")
+        pending = [kid for kid, k in (r["c"].get("knockout") or {}).items()
+                   if kid in ko_cfg and not k.get("hit") and k.get("uncertain")]
+        if pending:
+            flags.append(f"KO 미확정({'/'.join(sorted(pending))})")
         r["flags"] = flags
     for r in dropped:
         r["rank"], r["flags"] = "", []

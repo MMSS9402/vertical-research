@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+영업팀 피드백(VMS·SW 업체가 여전히 후보에 섞임)을 반영해 타깃 기준을 좁혔습니다.
+
+- 예시 설정에 Knock-Out 3개를 추가했습니다. `K6 자체 Matching 엔진 보유`(Detection 만 자체면 해당 안 됨), `K7 FR 제품·기능 없음`(AI·Vision 일반만 하는 업체), `K8 외부 엔진 탑재 제품 없음`(카메라·AI Box·단말기·키오스크·게이트 없이 VMS·보안 SW 만 하는 업체).
+- researcher 가 엔진 출처를 공개 자료(데이터시트, 보도자료, 엔진사 파트너 발표, NIST FRTE 참가)로 먼저 확인합니다. 판단하지 못하면 `hit: false` 에 `uncertain: true` 를 붙이고, 채점에서 `KO 미확정(<id>)` 표시가 붙어 사람이 확인합니다. verifier 가 판단을 적으면 표시가 사라집니다.
+- planner 의 Target 정의에서 VMS 업체를 빼고, 타사 FR 엔진사의 파트너·OEM 목록을 후보 출처로 씁니다.
+
 ## 0.3.0
 
 - 대륙 단위 조사: 설정에 `region_groups`(예: `북미` = US·CA·MX, `남미` = 남미 12개국)를 두면 `/vertical-research:run "<버티컬>" 북미` 처럼 대륙 이름으로 실행합니다. `new-run --config` 가 국가 코드 목록을 `run.json` 의 `countries` 에 남기고, `check-records` 는 지역 밖 target 을 경고합니다.

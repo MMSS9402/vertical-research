@@ -144,7 +144,8 @@ run_log.md            # 드라이버가 단계별 결과를 append
 }
 ```
 
-- `segment`: `target` (채점 대상) 또는 `competitor` (경쟁사, 채점 안 함). target 은 엔진 SDK 를 받아 자기 제품·솔루션에 넣어 개발할 주체다. 솔루션을 사서 쓰는 최종 이용 기업(통신·유통·금융·숙박 운영사 등)은 target 이 아니다.
+- `segment`: `target` (채점 대상) 또는 `competitor` (경쟁사, 채점 안 함). target 은 엔진 SDK 를 받아 자기 제품·솔루션에 넣어 개발할 주체다. 솔루션을 사서 쓰는 최종 이용 기업(통신·유통·금융·숙박 운영사 등)은 target 이 아니다. Matching 까지 되는 자체 얼굴 엔진을 쓰는 업체는 competitor 다 (Detection 만 자체면 아니다).
+- `knockout.<id>.uncertain`: 선택. 공개 자료로 판단하지 못해 `hit: false` 로 둔 항목에 `true` 로 붙인다. 채점에서 `KO 미확정(<id>)` 표시가 붙고, verifier 가 판단을 적으면 사라진다.
 - `country`: 본사 국가 코드(ISO 2자리). 지역 법인이 사업 주체면 그 법인 국가.
 - `target` 은 설정의 **모든** knockout id 와 **모든** scoring id 를 채운다.
 - `level` 은 `상`·`중`·`하`·`확인불가` 중 하나. `확인불가` 가 아니면 `evidence` 와 `source`(http/https URL) 가 반드시 있다.
@@ -224,6 +225,7 @@ run_log.md            # 드라이버가 단계별 결과를 append
 | `미검증` | verifier 가 다루지 않은 업체 |
 | `타버티컬제안` | 이 업체의 제안서는 다른 버티컬 보고서 기준으로 1건만 쓴다 |
 | `타버티컬KO` | 다른 버티컬 실행에서 Knock-Out 에 걸림 (명부에서 제외) |
+| `KO 미확정(<id>)` | 공개 자료로 그 Knock-Out 을 판단하지 못함 (예: 엔진 출처 미공개) — 사람이 확인 |
 | `<id> 회사공통 불일치` | 회사 공통 항목 등급이 실행마다 다름 — 사람이 확인 |
 
 ## 6. 보안 규칙 (모든 에이전트)

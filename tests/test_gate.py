@@ -12,7 +12,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GATE = os.path.join(ROOT, "scripts", "gate.py")
 CONFIG = os.path.join(ROOT, "examples", "vertical-research.config.md")
 SCORING = ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2"]
-KO = ["K1", "K2", "K3", "K4", "K5"]
+KO = ["K1", "K2", "K3", "K4", "K5", "K6", "K7", "K8"]
 
 
 def target(name, home, levels, ko_hit=None):
@@ -342,6 +342,20 @@ class GateTest(unittest.TestCase):
         code, out = run("check-records", path, "--config", self.cfg)
         self.assertEqual(code, 0, out)                        # 지역 밖 업체는 경고만 한다
         self.assertIn("WARN: 조사 지역 밖 target 1곳 — Beta (KR)", out)
+
+    def test_uncertain_knockout_flags_until_verifier_settles(self):
+        rec = target("Alpha", "https://alpha.com", ["상"] * 8)
+        rec["knockout"]["K6"] = {"hit": False, "uncertain": True, "evidence": "엔진 출처 공개 자료 없음", "source": ""}
+        self.write("records/u1.json", {"unit": "u1", "companies": [rec, target("Beta", "https://beta.com", ["중"] * 8)]})
+        run("score", self.dir, "--config", self.cfg)
+        rows = {r["company"]: r for r in self.rows()}
+        self.assertIn("KO 미확정(K6)", rows["Alpha"]["review_flag"])
+        self.assertNotIn("KO 미확정", rows["Beta"]["review_flag"])
+        self.write("verify/u1.json", {"unit": "u1", "companies": [
+            {"company": "Alpha", "status": "ok",
+             "knockout": {"K6": {"hit": False, "evidence": "데이터시트에 타사 엔진 탑재 명시", "source": "https://alpha.com/ds"}}}]})
+        run("score", self.dir, "--config", self.cfg)
+        self.assertNotIn("KO 미확정", {r["company"]: r for r in self.rows()}["Alpha"]["review_flag"])
 
 
 if __name__ == "__main__":
