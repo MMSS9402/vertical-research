@@ -12,7 +12,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GATE = os.path.join(ROOT, "scripts", "gate.py")
 CONFIG = os.path.join(ROOT, "examples", "vertical-research.config.md")
 SCORING = ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2"]
-KO = ["K1", "K2", "K3", "K4", "K5", "K6", "K7", "K8"]
+KO = ["K1", "K2", "K3", "K4", "K5", "K6", "K8"]
 
 
 def target(name, home, levels, ko_hit=None):

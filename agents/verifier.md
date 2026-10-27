@@ -17,7 +17,7 @@ tools: Read, Write, WebFetch, WebSearch
 
 1. **실존·범위**: 홈페이지가 열리고 회사가 실제 사업 중인가? plan 의 버티컬 범위 안인가? 아니면 `status: "drop"`. records 의 `homepage` 가 비었거나 기사 URL 이면 공식 홈페이지를 찾아 `homepage` 에 적는다.
 2. **Knock-Out**: 특히 K1 직접 경쟁사 여부를 홈페이지 제품 목록에서 직접 확인한다. 조사자가 놓친 hit 가 있으면 `knockout` 에 적는다.
-   - 설정에 자체 Matching 엔진·FR 제품·기능·외부 엔진 탑재 제품 기준이 있으면 이 셋도 직접 본다. Detection 만 자체인 업체는 자체 엔진 hit 가 아니다. VMS·보안 SW 만 있고 엔진을 올릴 자체 HW 가 없으면 탑재 제품 hit 다.
+   - 설정에 자체 Matching 엔진·외부 엔진 탑재 제품 기준이 있으면 이 둘도 직접 본다. Detection 만 자체인 업체는 자체 엔진 hit 가 아니다. VMS·보안 SW 만 있고 엔진을 올릴 자체 HW 가 없으면 탑재 제품 hit 다.
    - records 에 `"uncertain": true` 가 붙은 항목은 우선 확인한다. 판단이 서면 `uncertain` 없이 hit 와 출처를 적어 덮어쓰고, 여전히 모르면 적지 않는다 (미확정 표시가 남는다).
 3. **등급 항목**: 등급이 매겨진 항목의 `source` 를 열어 `evidence` 가 실제로 적혀 있는지 본다.
    - 적혀 있고 guide 기준에 맞음 → `confirmed`
