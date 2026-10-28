@@ -22,6 +22,7 @@
   "output_dir": "research",
   "top_n": 20,
   "regions": ["Global"],
+  "target_products": [],
   "region_groups": {
     "북미": ["US", "CA", "MX"],
     "남미": ["AR", "BO", "BR", "CL", "CO", "EC", "GY", "PE", "PY", "SR", "UY", "VE"]

@@ -59,6 +59,9 @@ def load_config(path):
     groups = cfg.setdefault("region_groups", {})
     if not isinstance(groups, dict) or not all(isinstance(v, list) and v for v in groups.values()):
         die("region_groups 는 {지역 이름: [국가 코드, ...]} 형식이어야 함")
+    products = cfg.setdefault("target_products", [])
+    if not isinstance(products, list) or not all(isinstance(p, str) and p.strip() for p in products):
+        die("target_products 는 제품 이름 문자열 목록이어야 함")
     return cfg
 
 

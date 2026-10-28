@@ -82,6 +82,7 @@ run_log.md            # 드라이버가 단계별 결과를 append
 | `top_n` | 최종 후보 수 |
 | `regions` | 기본 조사 지역 |
 | `region_groups` | (선택) 대륙 지역 이름 → 국가 코드 목록. 예: `{"북미": ["US","CA","MX"], "남미": ["BR","AR",...]}`. 실행 인자 지역이 이 이름이면 `new-run` 이 `run.json` 의 `countries` 로 풀어 둔다 |
+| `target_products` | (선택) 이번 조사에서 제안할 제품 목록. 있으면 Target 은 이 제품을 붙일 수 있는 업체로 한정하고, 보고서는 이 제품만 제안한다. 없으면 제품 전체 기준 |
 | `knockout` | 제외 기준 목록 `{id, name, rule, check}` |
 | `scoring` | 평가 항목 목록 `{id, scope, area, name, max, levels:{상,중,하}, check, guide}`. `scope` 는 `company`/`vertical` (생략 시 `vertical`) |
 | `contact_roles` | 제안 담당자 직책 우선순위 |

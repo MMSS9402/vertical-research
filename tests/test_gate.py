@@ -326,6 +326,16 @@ class GateTest(unittest.TestCase):
         self.assertEqual(out2.strip(), path + "-2")           # 이전 실행 폴더는 건드리지 않는다
         self.assertNotIn("countries", meta)                   # 설정 없이 만든 실행은 국가 제한이 없다
 
+    def test_target_products_must_be_string_list(self):
+        self.base_records()
+        with open(self.cfg, encoding="utf-8") as f:
+            text = f.read()
+        for value, ok in (('["AcmeFace Server SDK"]', True), ('"AcmeFace Server SDK"', False)):
+            with open(self.cfg, "w", encoding="utf-8") as f:
+                f.write(text.replace('"target_products": []', f'"target_products": {value}'))
+            code, out = run("check-records", self.dir, "--config", self.cfg)
+            self.assertEqual(code == 0, ok, out)
+
     def test_new_run_expands_region_group_and_warns_outside(self):
         code, out = run("new-run", self.root, "--vertical", "건설", "--regions", "북미,남미", "--config", self.cfg)
         self.assertEqual(code, 0, out)
